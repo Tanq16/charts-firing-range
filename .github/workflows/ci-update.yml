@@ -1,16 +1,86 @@
-name: CI Update Test
+name: CI Update
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize]
-permissions:
-  contents: read
-  pull-requests: read
+    types: [opened, reopened, synchronize, labeled]
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
 jobs:
-  test:
+  get-chart:
     runs-on: ubuntu-latest
+    name: Get modified charts
+    permissions:
+      pull-requests: read
+    outputs:
+      chart: ${{ steps.get-chart.outputs.chart }}
+      result: ${{ steps.get-chart.outputs.result }}
     steps:
-      - run: |
-          echo "PRT triggered!"
-          echo "PR head ref: ${{ github.event.pull_request.head.ref }}"
-          echo "PR head repo: ${{ github.event.pull_request.head.repo.full_name }}"
-          echo "Event: ${{ github.event_name }}"
+      - id: get-chart
+        name: Detect modified chart
+        env:
+          PR_URL: ${{ github.event.pull_request.url }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CHANGED=$(gh api "$PR_URL/files" --jq '.[].filename' | head -1)
+          echo "First changed file: $CHANGED"
+          CHART=$(echo "$CHANGED" | cut -d/ -f2)
+          echo "Detected chart: $CHART"
+          if [ -n "$CHART" ]; then
+            echo "chart=$CHART" >> $GITHUB_OUTPUT
+            echo "result=ok" >> $GITHUB_OUTPUT
+          else
+            echo "result=skip" >> $GITHUB_OUTPUT
+          fi
+  update-pr:
+    runs-on: ubuntu-latest
+    needs: [get-chart]
+    name: Update README and CHANGELOG
+    permissions:
+      contents: read
+    if: needs.get-chart.outputs.result == 'ok'
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.BOT_TOKEN }}
+          path: charts
+      - name: Clone upstream repository
+        uses: actions/checkout@v4
+        with:
+          path: upstream-charts
+      - name: Setup git
+        run: |
+          cd $GITHUB_WORKSPACE/charts
+          git config user.name "CI Bot"
+          git config user.email "bot@example.com"
+      - name: Generate changelog
+        env:
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ github.token }}
+          CHART: ${{ needs.get-chart.outputs.chart }}
+        run: |
+          echo "Processing chart: ${CHART}"
+          cd "${GITHUB_WORKSPACE}/charts" || exit 1
+          changelog_file="${GITHUB_WORKSPACE}/charts/bitnami/${CHART}/CHANGELOG.md"
+          echo "Changelog path: $changelog_file"
+          mkdir -p "$(dirname "$changelog_file")"
+          echo -e "# Changelog
+
+## 1.0.0 ($(date +'%Y-%m-%d'))
+
+* Updated" > "$changelog_file"
+          if git status -s | grep "bitnami/${CHART}"; then
+            git add "bitnami/${CHART}/CHANGELOG.md"
+            git commit -m "Update CHANGELOG.md" --signoff
+          fi
+      - name: Push changes
+        run: |
+          cd $GITHUB_WORKSPACE/charts
+          if [[ $(git cherry -v) ]]; then
+            git push
+            echo "Pushed changes"
+          else
+            echo "No changes to push"
+          fi
