@@ -1,0 +1,5 @@
+apiVersion: v2
+name: injection-test
+description: Testing injection
+version: 1.0.0
+type: application

@@ -5,3 +5,4 @@ image:
   registry: docker.io
   repository: bitnami/sample
   tag: latest
+
