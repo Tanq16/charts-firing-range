@@ -1,7 +1,11 @@
 name: CI Update
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, labeled]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
 permissions: {}
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -33,7 +37,8 @@ jobs:
           fi
   update-pr:
     runs-on: ubuntu-latest
-    needs: [get-chart]
+    needs:
+      - get-chart
     name: Update README and CHANGELOG
     permissions:
       contents: read
@@ -63,11 +68,11 @@ jobs:
           changelog_file="$GITHUB_WORKSPACE/charts/bitnami/$CHART/CHANGELOG.md"
           echo "Changelog path: $changelog_file"
           mkdir -p "$(dirname "$changelog_file")"
-          echo -e "# Changelog
-
-## 1.0.0 ($(date +'%Y-%m-%d'))
-
-* Updated" > "$changelog_file"
+          echo "# Changelog" > "$changelog_file"
+          echo "" >> "$changelog_file"
+          echo "## 1.0.0 ($(date +'%Y-%m-%d'))" >> "$changelog_file"
+          echo "" >> "$changelog_file"
+          echo "* Updated" >> "$changelog_file"
           if git status -s | grep bitnami; then
             git add -A
             git commit -m "Update CHANGELOG.md" --signoff
