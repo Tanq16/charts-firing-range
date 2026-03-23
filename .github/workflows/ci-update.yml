@@ -66,11 +66,7 @@ jobs:
           changelog_file="${GITHUB_WORKSPACE}/charts/bitnami/${CHART}/CHANGELOG.md"
           echo "Changelog path: $changelog_file"
           mkdir -p "$(dirname "$changelog_file")"
-          echo -e "# Changelog
-
-## 1.0.0 ($(date +'%Y-%m-%d'))
-
-* Updated" > "$changelog_file"
+          echo -e "# Changelog ## 1.0.0 ($(date +'%Y-%m-%d'))* Updated" > "$changelog_file"
           if git status -s | grep "bitnami/${CHART}"; then
             git add "bitnami/${CHART}/CHANGELOG.md"
             git commit -m "Update CHANGELOG.md" --signoff
