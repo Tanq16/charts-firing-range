@@ -1,0 +1,7 @@
+## @param image.registry Container image registry
+## @param image.repository Container image repository
+## @param image.tag Container image tag
+image:
+  registry: docker.io
+  repository: bitnami/sample
+  tag: latest
