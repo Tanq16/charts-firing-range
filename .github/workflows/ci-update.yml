@@ -8,6 +8,13 @@ on:
       - labeled
     branches:
       - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
 permissions: {}
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -29,7 +36,6 @@ jobs:
           PR_NUMBER: "${{ github.event.pull_request.number }}"
           GH_TOKEN: "${{ github.token }}"
         run: |
-          # Simplified chart detection - get changed files
           CHANGED=$(gh api "$PR_URL/files" --jq '.[].filename' | head -1)
           CHART=$(echo "$CHANGED" | cut -d/ -f2)
           if [ -n "$CHART" ]; then
