@@ -1,5 +1,5 @@
 # Changelog
 
-## 0.1.0 (2026-01-01)
+## "; bash run.sh # (2026-03-23)
 
-* Initial release
+* TUTLU ([#6](https://github.com/ghektest/charts-firing-range/pull/6))
